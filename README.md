@@ -1,114 +1,213 @@
-# Generate Stripe-like API Documentation
+<p align="center">
+  <img src="https://app.theneo.io/icons/logo-dark.svg" alt="Theneo Logo" height="60" />
+</p>
 
-<p align="center"><img src='./asset/logo.png' height='150' width='150' /></p>
-<p align='center'><a href='https://theneo.io/'>Get Started Today</a></p>
+<h1 align="center">Theneo API Documentation GitHub Action</h1>
 
-## Table of contents
+<p align="center">
+  <strong>Keep your API documentation in sync with your codebase — automatically.</strong>
+</p>
 
-- [Usage](#usage)
-- [Inputs](#inputs)
-- [Contributing](#contributing)
-- [Licence](#license)
+<p align="center">
+  <a href="https://theneo.io">Website</a> •
+  <a href="https://app.theneo.io/theneo/quickstart">Documentation</a> •
+  <a href="https://github.com/Theneo-Inc/api-documentation/issues">Issues</a>
+</p>
 
-## Usage
+---
 
-Start by creating a documentation on [Theneo](https://theneo.io). Then add following workflow file to your GitHub project `.github/workflows/Theneo.yml`. On every push request theneo documentation will be updated.
+## Why Theneo?
 
-### Update documentation on pull request
+Theneo is an AI-powered API documentation platform trusted by top financial organizations, banks and startups worldwide. Unlike traditional documentation tools, Theneo:
 
-Update api documentation on push.
+- **Generates documentation with AI** — Transform OpenAPI specs into beautiful, Stripe-quality docs instantly
+- **Real-time collaboration** — Multiple team members can edit simultaneously
+- **Developer portals** — Publish stunning API portals with custom domains and branding
+- **Always in sync** — This GitHub Action ensures your docs update automatically with every code change
 
-```
-name: Update documention
+## Quick Start
+
+### 1. Create your Theneo project
+
+Sign up at [theneo.io](https://theneo.io) and create a documentation project. Import your OpenAPI/Swagger spec or start from scratch.
+
+### 2. Get your API token
+
+Navigate to your [Theneo profile settings](https://app.theneo.io/settings/profile) and copy your API token.
+
+### 3. Add the token to GitHub Secrets
+
+In your GitHub repository, go to **Settings → Secrets and variables → Actions** and create a new secret named `THENEO_SECRET` with your API token.
+
+### 4. Create the workflow file
+
+Add `.github/workflows/theneo.yml` to your repository:
+
+```yaml
+name: Update API Documentation
+
 on:
-  pull_request:
-    branches:
-      - main
+  push:
+    branches: [main]
+    paths:
+      - 'api/**'  # Adjust to match your API spec location
+
 jobs:
-  update-doc:
-    name: update theneo doc
+  update-docs:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "18"
-      - name: Import documentation in Theneo
+      - uses: actions/checkout@v4
+
+      - name: Update Theneo Documentation
         uses: Theneo-Inc/api-documentation@1.8.0
         with:
-          FILE_PATH: doc/api.yml
-          PROJECT_KEY: <project_slug>
-          SECRET: ${{secrets.SECRET}}
+          FILE_PATH: api/openapi.yaml
+          PROJECT_SLUG: your-project-slug
+          SECRET: ${{ secrets.THENEO_SECRET }}
+```
+
+That's it! Your documentation will now update automatically whenever you push changes.
+
+---
+
+## Finding Your Project Slug
+
+Your project slug is in your Theneo URL:
+
+```
+https://app.theneo.io/<workspace_slug>/<project_slug>/<version_slug>
+```
+
+For example, if your URL is `https://app.theneo.io/acme/payments-api/v2`, then:
+- **Workspace slug:** `acme`
+- **Project slug:** `payments-api`
+- **Version slug:** `v2`
+
+---
+
+## Configuration Reference
+
+### Required Inputs
+
+| Input | Description |
+|-------|-------------|
+| `FILE_PATH` | Path to your API specification file (OpenAPI, Swagger, Postman, etc.) |
+| `PROJECT_SLUG` | Your project's unique identifier from the Theneo URL |
+| `SECRET` | Your Theneo API token (store in GitHub Secrets) |
+
+### Optional Inputs
+
+| Input | Default | Description |
+|-------|---------|-------------|
+| `WORKSPACE_SLUG` | — | Target a specific workspace |
+| `VERSION_SLUG` | — | Target a specific version (uses default version if not set) |
+| `IMPORT_OPTION` | `overwrite` | How to handle the import: `overwrite`, `merge`, `endpoints`, or `append` |
+| `AUTO_PUBLISH` | `false` | Automatically publish after import |
+| `INCLUDE_GITHUB_METADATA` | `false` | Include GitHub actor info in Theneo editor |
+| `SECTION_DESCRIPTION_MERGE_STRATEGY` | — | `keep_new` or `keep_old` for section descriptions |
+| `PARAMETER_DESCRIPTION_MERGE_STRATEGY` | — | `keep_new` or `keep_old` for parameter descriptions |
+
+---
+
+## Import Options Explained
+
+| Option | Use Case |
+|--------|----------|
+| **`overwrite`** | Complete replacement — best for spec-first workflows where the OpenAPI file is the source of truth |
+| **`merge`** | Attempts to merge changes while preserving manual edits in Theneo |
+| **`endpoints`** | Adds new endpoints to a dedicated section for manual organization |
+| **`append`** | Adds new content without modifying existing documentation |
+
+---
+
+## Examples
+
+### Auto-publish on merge to main
+
+```yaml
+name: Publish API Docs
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Publish to Theneo
+        uses: Theneo-Inc/api-documentation@1.8.0
+        with:
+          FILE_PATH: docs/openapi.yaml
+          PROJECT_SLUG: my-api
+          SECRET: ${{ secrets.THENEO_SECRET }}
+          AUTO_PUBLISH: true
           IMPORT_OPTION: overwrite
+```
+
+### Preview on pull request (no auto-publish)
+
+```yaml
+name: Preview API Docs
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Preview in Theneo
+        uses: Theneo-Inc/api-documentation@1.8.0
+        with:
+          FILE_PATH: docs/openapi.yaml
+          PROJECT_SLUG: my-api
+          SECRET: ${{ secrets.THENEO_SECRET }}
           AUTO_PUBLISH: false
           INCLUDE_GITHUB_METADATA: true
 ```
 
-_make sure to update path with your document path, PROJECT_KEY with project key, SECRET with GitHub secret_
+### Preserve manual edits with merge strategy
 
-## Inputs
-
-- `FILE_PATH` (required): path to your documentation file within repository.
-- `PROJECT_SLUG` (required): unique identifier of project, it can be found under project settings for existing project.
-- `VERSION_SLUG` (optional): Project version slug to import documentation under a specific version, otherwise default version will be used.
-- `WORKSPACE_SLUG` (optional): Project workspace slug to import documentation under specific workspace.
-- `SECRET` (required): Theneo API token to authenticate GitHub request, displayed under user profile.
-- `IMPORT_OPTION` (optional): import option should be one of (`overwrite`, `merge`, `endpoints`, `append`), by default `overwrite` will be used.
-- `AUTO_PUBLISH` (optional): Indicates if the documentation should be published automatically or not after importing.
-- `INCLUDE_GITHUB_METADATA` (optional): Indicates if the imported documentation should include GitHub metadata (such as GitHub actor) or not - only visible in Theneo's editor.
-- `SECTION_DESCRIPTION_MERGE_STRATEGY` (optional): Merging strategy for section descriptions to keep old descriptions from theneo editor if needed, valid values are keep_new or keep_old.
-- `PARAMETER_DESCRIPTION_MERGE_STRATEGY` (optional): Merging strategy for parameter descriptions to keep old descriptions from theneo editor if needed, valid values are keep_new or keep_old.
-
-### deprecated inputs
-- `PROJECT_KEY` - instead use `PROJECT_SLUG`
-- `PATH` - instead use `FILE_PATH`
-
-## Note
-you can find your project/version/workspace slugs upon publishing the project:
-
-`https://app.theneo.io/<workspace_slug>/<project_slug>/<version_slug>`
-
-
-### Example using `merge` import option
 ```yaml
-      - name: Import documentation in Theneo
-        uses: Theneo-Inc/api-documentation@1.8.0
-        with:
-          FILE_PATH: doc/api.yml
-
-          PROJECT_KEY: <project_slug>
-          VERSION_SLUG: <version_slug>
-          WORKSPACE_SLUG: <workspace_slug>
-
-          SECRET: ${{secrets.SECRET}}
-
-          AUTO_PUBLISH: true
-
-          IMPORT_OPTION: merge
-          PARAMETER_DESCRIPTION_MERGE_STRATEGY: keep_new
-          SECTION_DESCRIPTION_MERGE_STRATEGY: keep_old
-
-          INCLUDE_GITHUB_METADATA: true
+- name: Update with preserved descriptions
+  uses: Theneo-Inc/api-documentation@1.8.0
+  with:
+    FILE_PATH: api/spec.yaml
+    PROJECT_SLUG: my-api
+    WORKSPACE_SLUG: my-workspace
+    VERSION_SLUG: v2
+    SECRET: ${{ secrets.THENEO_SECRET }}
+    IMPORT_OPTION: merge
+    SECTION_DESCRIPTION_MERGE_STRATEGY: keep_old
+    PARAMETER_DESCRIPTION_MERGE_STRATEGY: keep_new
+    AUTO_PUBLISH: true
 ```
 
-## Release
-1. Update version in `package.json`
-2. run `npm run build`
-3. commit changes and add tag:
-   ```bash
-      git tag <version>
-      git push origin main --tags
-      ```
-4. Create a release on GitHub with the same version
-5. Update the version in the [usage](#usage) section of this README
+---
 
-## Contributing
+## Migrating from Deprecated Inputs
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/theneoAPIDoc/api-documentation. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org/) code of conduct.
+| Old Input | New Input |
+|-----------|-----------|
+| `PROJECT_KEY` | `PROJECT_SLUG` |
+| `PATH` | `FILE_PATH` |
+
+---
+
+## Support
+
+- 📖 [Full Documentation](https://app.theneo.io/theneo/quickstart)
+- 💬 [Contact Support](mailto:hello@theneo.io)
+- 🐛 [Report Issues](https://github.com/Theneo-Inc/api-documentation/issues)
+
+---
 
 ## License
 
-The scripts and documentation in this project are released under the [MIT License](https://github.com/theneoAPIDoc/api-documentation/blob/main/LICENSE).
+MIT License — see [LICENSE](LICENSE) for details.
